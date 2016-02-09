@@ -10,6 +10,9 @@ from PIL import Image
 import theano
 import theano.tensor as T
 from theano.tensor.nnet.neighbours import images2neibs
+from os import listdir
+import os
+
 
 '''
 Implement the functions that were not implemented and complete the
@@ -107,26 +110,36 @@ def plot(c, D, n_blocks, X_mn, ax):
     raise NotImplementedError
 
 
+def read_imge_dir_to_arr(dirname):
+    onlyfiles = [os.path.join(dirname, f) for f in listdir(dirname) if os.path.isfile(os.path.join(dirname, f))]
+    num_of_imgs = len(onlyfiles)
+    width, height = Image.open(onlyfiles[0]).size
+    return np.stack([np.asarray(list(Image.open(file_str).getdata())).reshape(width, height) for file_str in onlyfiles])
+
 def main():
     '''
     Read here all images(grayscale) from jaffe folder
     into an numpy array Ims with size (no_images, height, width).
     Make sure the images are read after sorting the filenames
     '''
-
+    ims = read_imge_dir_to_arr("jaffe")
     szs = [16, 32, 64]
     num_coeffs = [range(1, 10, 1), range(3, 30, 3), range(5, 50, 5)]
-
-    for sz, nc in in zip(szs, num_coeffs):
+    for sz, nc in zip(szs, num_coeffs):
         '''
         Divide here each image into non-overlapping blocks of shape (sz, sz).
         Flatten each block and arrange all the blocks in a
         (no_images*n_blocks_in_image) x (sz*sz) matrix called X
         '''
+        arr = []
+        for i in range(0, len(ims)):
+            dimension = ims[i].shape[0]
+            list_of_blocks = sum([np.hsplit(item, dimension / sz) for item in np.vsplit(ims[i], dimension / sz)],[])
+            arr.extend([item.flatten() for item in list_of_blocks])
 
+        X = np.asarray(arr)
         X_mn = np.mean(X, 0)
         X = X - np.repeat(X_mn.reshape(1, -1), X.shape[0], 0)
-
         '''
         Perform eigendecomposition on X^T X and arrange the eigenvectors
         in decreasing order of eigenvalues into a matrix D
