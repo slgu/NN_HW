@@ -50,7 +50,6 @@ def plot_mul(c, D, im_num, X_mn, num_coeffs, n_blocks):
         For example, for a 256x256 image divided into 64x64 blocks, n_blocks will be 4
     '''
     f, axarr = plt.subplots(3, 3)
-
     for i in range(3):
         for j in range(3):
             nc = num_coeffs[i*3+j]
@@ -79,14 +78,14 @@ def plot_top_16(D, sz, imname):
     imname: string
         name of file where image will be saved.
     '''
-    raise NotImplementedError
+    return
+    #raise NotImplementedError
 
 
 def plot(c, D, n_blocks, X_mn, ax):
     '''
     Plots a reconstruction of a particular image using D as the basis matrix and coeffiecient
     vectors from c
-
     Parameters
     ------------------------
         c: np.ndarray
@@ -107,11 +106,23 @@ def plot(c, D, n_blocks, X_mn, ax):
 
         ax: the axis on which the image will be plotted
     '''
-    raise NotImplementedError
+    result = np.asarray(np.dot(c.T, D.T))
+    result = np.asarray([item + X_mn.flatten() for item in result])
+    #m * N
+    res = np.zeros((256, 256), dtype=np.float)
+    for i in range(0, n_blocks):
+        for j in range(0, n_blocks):
+            idx = i * n_blocks + j
+            for k in range(0, X_mn.shape[0]):
+                for o in range(0, X_mn.shape[1]):
+                    res[i * 256 / n_blocks + k][j * 256 / n_blocks + o] = result[idx][k * X_mn.shape[1] + o]
+    ax.imshow(res, cmap = cm.Greys_r)
+    return
 
 
 def read_imge_dir_to_arr(dirname):
     onlyfiles = [os.path.join(dirname, f) for f in listdir(dirname) if os.path.isfile(os.path.join(dirname, f))]
+    onlyfiles.sort()
     num_of_imgs = len(onlyfiles)
     width, height = Image.open(onlyfiles[0]).size
     return np.stack([np.asarray(list(Image.open(file_str).getdata())).reshape(width, height) for file_str in onlyfiles])
@@ -136,21 +147,25 @@ def main():
             dimension = ims[i].shape[0]
             list_of_blocks = sum([np.hsplit(item, dimension / sz) for item in np.vsplit(ims[i], dimension / sz)],[])
             arr.extend([item.flatten() for item in list_of_blocks])
-
         X = np.asarray(arr)
+
         X_mn = np.mean(X, 0)
+        #a mean which is added when reconstruction
         X = X - np.repeat(X_mn.reshape(1, -1), X.shape[0], 0)
         '''
         Perform eigendecomposition on X^T X and arrange the eigenvectors
         in decreasing order of eigenvalues into a matrix D
         '''
-
+        #X (n * m) D = (m * m)
+        eig_vals, D = np.linalg.eig(np.mat(np.dot(X.T, X)))
+        #sort according to eigvals
+        eig_idx = np.argsort(eig_vals)
+        eig_idx = eig_idx[::-1]
+        D = D[:,eig_idx]
         c = np.dot(D.T, X.T)
-
         for i in range(0, 200, 10):
             plot_mul(c, D, i, X_mn.reshape((sz, sz)),
                      num_coeffs=nc, n_blocks=int(256/sz))
-
         plot_top_16(D, sz, imname='output/hw1a_top16_{0}.png'.format(sz))
 
 
