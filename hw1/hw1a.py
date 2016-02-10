@@ -78,7 +78,14 @@ def plot_top_16(D, sz, imname):
     imname: string
         name of file where image will be saved.
     '''
-    return
+    f, axarr = plt.subplots(4, 4)
+    print D.shape
+    for i in range(4):
+        for j in range(4):
+            idx = i * 4 + j
+            axarr[i, j].imshow(D[:, idx].reshape(sz,sz), cmap = cm.Greys_r)
+    f.savefig(imname)
+    plt.close(f)
     #raise NotImplementedError
 
 
