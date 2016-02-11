@@ -10,6 +10,9 @@ from PIL import Image
 import theano
 import theano.tensor as T
 from theano.tensor.nnet.neighbours import images2neibs
+from os import listdir
+import os
+rng = np.random
 
 '''
 Implement the functions that were not implemented and complete the
@@ -91,8 +94,18 @@ def plot(c, D, X_mn, ax):
 
         ax: the axis on which the image will be plotted
     '''
-    raise NotImplementedError
+    result = np.asarray(np.dot(c.T, D.T)) #1 * N
+    result = np.asarray([item + X_mn.flatten() for item in result])
+    result.reshape(256, 256)
+    ax.imshow(res, cmap = cm.Greys_r)
 
+
+def read_imge_dir_to_arr(dirname):
+    onlyfiles = [os.path.join(dirname, f) for f in listdir(dirname) if os.path.isfile(os.path.join(dirname, f))]
+    onlyfiles.sort()
+    num_of_imgs = len(onlyfiles)
+    width, height = Image.open(onlyfiles[0]).size
+    return np.stack([np.asarray(list(Image.open(file_str).getdata())).reshape(width * height) for file_str in onlyfiles])
 
 if __name__ == '__main__':
     '''
@@ -100,8 +113,8 @@ if __name__ == '__main__':
     to get an numpy array Ims with size (no_images, height*width).
     Make sure to sort the filenames before reading the images
     '''
-
-    Ims = I.astype(np.float32)
+    Ims = read_imge_dir_to_arr("jaffe")
+    Ims = Ims.astype(np.float32)
     X_mn = np.mean(Ims, 0)
     X = Ims - np.repeat(X_mn.reshape(1, -1), Ims.shape[0], 0)
 
@@ -113,10 +126,38 @@ if __name__ == '__main__':
     You need to perform a patch to theano from this pull(https://github.com/Theano/Theano/pull/3532)
     Alternatively you can downgrade numpy to 1.9.3, scipy to 0.15.1, matplotlib to 1.4.2
     '''
+    iter_step = 20
+    num_of_eigens = 4
+    num_of_imgs = X.shape[0]
+    update_rate = 0.1
+    width = 256
+    height = 256
+    D = np.zeros((width * height, num_of_eigens), dtype=np.float)
+    lamb = np.zeros(num_of_eigens, dtype=np.float)
+    for i in range(num_of_eigens):
+        d = theano.shared(rng.randn(width * height), name="d")
+        X_d = T.dot(X, d)
+        loss = T.dot(X_d.T, X_d)
+        for j in range(0, i):
+            d_j_d = T.dot(D[:,j].T, d)
+            loss = loss - lamb[j] * T.dot(d_j_d.T, d_j_d)
+        loss = -loss
+        g_d = T.grad(loss, [d])[0]
+        train = theano.function(
+            inputs=[],
+            outputs = [d, loss],
+            updates=[(d, (d - update_rate * g_d) / (d - update_rate * g_d).norm(L=2))]
+            )
+        res_d = None
+        for j in range(iter_step):
+            res_d, per_loss = train()
+            print per_loss
+        D[:,i] = res_d
+        lamb[i] = np.dot(np.dot(np.dot(res_d.T, X.T),X), res_d)
 
+    c = np.dot(D.T, X.T)
     for i in range(0,200,10):
         plot_mul(c, D, i, X_mn.reshape((256, 256)),
-                 [1, 2, 4, 6, 8, 10, 12, 14, 16], [1, 1])
+                 [1, 2, 4, 6, 8, 10, 12, 14, 16])
 
     plot_top_16(D, 256, 'output/hw1b_top16_256.png')
-
