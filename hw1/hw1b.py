@@ -72,7 +72,14 @@ def plot_top_16(D, sz, imname):
     imname: string
         name of file where image will be saved.
     '''
-    raise NotImplementedError
+    f, axarr = plt.subplots(4, 4)
+    print D.shape
+    for i in range(4):
+        for j in range(4):
+            idx = i * 4 + j
+            axarr[i, j].imshow(D[:, idx].reshape(sz,sz), cmap = cm.Greys_r)
+    f.savefig(imname)
+    plt.close(f)
 
 
 def plot(c, D, X_mn, ax):
@@ -95,9 +102,10 @@ def plot(c, D, X_mn, ax):
         ax: the axis on which the image will be plotted
     '''
     result = np.asarray(np.dot(c.T, D.T)) #1 * N
-    result = np.asarray([item + X_mn.flatten() for item in result])
-    result.reshape(256, 256)
-    ax.imshow(res, cmap = cm.Greys_r)
+    result = result.reshape(256, 256)
+    print result.shape
+    result += X_mn
+    ax.imshow(result, cmap = cm.Greys_r)
 
 
 def read_imge_dir_to_arr(dirname):
@@ -121,13 +129,13 @@ if __name__ == '__main__':
     '''
     Use theano to perform gradient descent to get top 16 PCA components of X
     Put them into a matrix D with decreasing order of eigenvalues
-
     If you are not using the provided AMI and get an error "Cannot construct a ufunc with more than 32 operands" :
     You need to perform a patch to theano from this pull(https://github.com/Theano/Theano/pull/3532)
     Alternatively you can downgrade numpy to 1.9.3, scipy to 0.15.1, matplotlib to 1.4.2
     '''
+
     iter_step = 20
-    num_of_eigens = 4
+    num_of_eigens = 16
     num_of_imgs = X.shape[0]
     update_rate = 0.1
     width = 256
@@ -137,25 +145,30 @@ if __name__ == '__main__':
     for i in range(num_of_eigens):
         d = theano.shared(rng.randn(width * height), name="d")
         X_d = T.dot(X, d)
+        #get loss
         loss = T.dot(X_d.T, X_d)
         for j in range(0, i):
             d_j_d = T.dot(D[:,j].T, d)
             loss = loss - lamb[j] * T.dot(d_j_d.T, d_j_d)
         loss = -loss
+        #gradient
         g_d = T.grad(loss, [d])[0]
+        #training function
         train = theano.function(
             inputs=[],
             outputs = [d, loss],
             updates=[(d, (d - update_rate * g_d) / (d - update_rate * g_d).norm(L=2))]
             )
         res_d = None
+        #iteration
         for j in range(iter_step):
             res_d, per_loss = train()
-            print per_loss
         D[:,i] = res_d
         lamb[i] = np.dot(np.dot(np.dot(res_d.T, X.T),X), res_d)
+        print lamb[i]
 
     c = np.dot(D.T, X.T)
+    print "D c calculate done"
     for i in range(0,200,10):
         plot_mul(c, D, i, X_mn.reshape((256, 256)),
                  [1, 2, 4, 6, 8, 10, 12, 14, 16])
