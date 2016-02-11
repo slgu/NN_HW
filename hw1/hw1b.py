@@ -165,6 +165,7 @@ if __name__ == '__main__':
             res_d, per_loss = train()
             if abs(per_loss - last_loss) < threshold:
                 break
+            last_loss = per_loss
         D[:,i] = res_d
         lamb[i] = np.dot(np.dot(np.dot(res_d.T, X.T),X), res_d)
         print "iterate time: %.4f" % (j)
