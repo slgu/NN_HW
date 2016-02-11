@@ -73,7 +73,6 @@ def plot_top_16(D, sz, imname):
         name of file where image will be saved.
     '''
     f, axarr = plt.subplots(4, 4)
-    print D.shape
     for i in range(4):
         for j in range(4):
             idx = i * 4 + j
@@ -103,7 +102,6 @@ def plot(c, D, X_mn, ax):
     '''
     result = np.asarray(np.dot(c.T, D.T)) #1 * N
     result = result.reshape(256, 256)
-    print result.shape
     result += X_mn
     ax.imshow(result, cmap = cm.Greys_r)
 
@@ -134,10 +132,11 @@ if __name__ == '__main__':
     Alternatively you can downgrade numpy to 1.9.3, scipy to 0.15.1, matplotlib to 1.4.2
     '''
 
-    iter_step = 20
+    iter_step = 100
     num_of_eigens = 16
     num_of_imgs = X.shape[0]
     update_rate = 0.1
+    threshold = 0.01
     width = 256
     height = 256
     D = np.zeros((width * height, num_of_eigens), dtype=np.float)
@@ -161,10 +160,14 @@ if __name__ == '__main__':
             )
         res_d = None
         #iteration
+        last_loss = 0
         for j in range(iter_step):
             res_d, per_loss = train()
+            if abs(per_loss - last_loss) < threshold:
+                break
         D[:,i] = res_d
         lamb[i] = np.dot(np.dot(np.dot(res_d.T, X.T),X), res_d)
+        print "iterate time: %.4f" % (j)
         print lamb[i]
 
     c = np.dot(D.T, X.T)
