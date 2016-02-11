@@ -132,7 +132,7 @@ def read_imge_dir_to_arr(dirname):
     onlyfiles.sort()
     num_of_imgs = len(onlyfiles)
     width, height = Image.open(onlyfiles[0]).size
-    return np.stack([np.asarray(list(Image.open(file_str).getdata())).reshape(width, height) for file_str in onlyfiles])
+    return np.asarray([np.asarray(list(Image.open(file_str).getdata())).reshape(width, height) for file_str in onlyfiles])
 
 def main():
     '''
