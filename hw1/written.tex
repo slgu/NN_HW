@@ -47,11 +47,13 @@ E(xy) = $\int_{0}^{1} \int_{0}^{1} 3xy *(x*y^{2} + x^{2} * y) d_{x}d_{y}$ = $\fr
 So x and y are not independent.
 \section*{Problem d}
 1. First we get the log maximum likelihood and ignore the const item as shown below:
-P = $\sum_{i=0}^{m}$ -$\frac{1}{2}$ $(x_{i} - u)^{T} \sum^{-1} (x_{i} - u)$ - $\frac{m}{2}$ * ln($|\sum|$)
+P = $\sum_{i=1}^{m}$ -$\frac{1}{2}$ $(x_{i} - u)^{T} \sum^{-1} (x_{i} - u)$ - $\frac{m}{2}$ * ln($|\Sigma|$)
 let's get the derivative for $u$ and let it to be 0: \\
-$\sum_{i=0}^{m}$ -$\sum^{-1} (x_{i} - u)^{T}$ = 0 $\Longrightarrow$ $\sum_{i=0}^{m}$ $(x_{i} - u)$ = 0 $\Longrightarrow$ the estimator for $u$ is $u$ = $\frac{\sum_{i=0}^{m}x_{i}}{m}$  \\
+$\sum_{i=1}^{m}$ -$\sum^{-1} (x_{i} - u)^{T}$ = 0 $\Longrightarrow$ $\sum_{i=0}^{m}$ $(x_{i} - u)$ = 0 $\Longrightarrow$ the estimator for $u$ is $u$ = $\frac{\sum_{i=1}^{m}x_{i}}{m}$  \\
 Then let's get the derivative for $\sum$ and let it to be 0: \\
- $\sum_{i=0}^{m}$ $(x_{i} - u) * (x_{i} - u)^{T}$ - m * $\sum$ = 0 $\Longrightarrow$ the estimator for $\sum$ is $\sum$ = $\frac{\sum_{i=0}^{m} (x_{i} - u) * (x_{i} - u)^{T}}{m}$ \\
- 2. 
+ $\sum_{i=1}^{m}$ $(x_{i} - u) * (x_{i} - u)^{T}$ - m * $\Sigma$ = 0 $\Longrightarrow$ the estimator for $\Sigma$ is $\Sigma$ = $\frac{\sum_{i=1}^{m} (x_{i} - u) * (x_{i} - u)^{T}}{m}$ \\
+ 2. $E(u) = m * \frac{1}{m} * u = u$. So this estimator $u$ is unbiased. But $\sum$ is biased. \\
+ E($\Sigma$) = $\frac {\sum_{i=1}^{m} (x_{i}x_{i}^{T} - 2 * x_{i} u^{T} +  uu^{T})}{m} $ where $u$ = $\frac{\sum_{i=1}^{m}x_{i}}{m}$. \\
+ Simplify it we can get  E($\Sigma$) = $\Sigma + uu^{T} - 2uu^{T} - \frac{2}{m} * \Sigma + uu^{T} +  \frac{1}{m} * \Sigma = \frac{m - 1}{m} \Sigma$. So this estimator is biased.
 
 \end{document} 
