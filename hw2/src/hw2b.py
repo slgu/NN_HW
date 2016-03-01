@@ -389,12 +389,74 @@ class MLP(object):
         # keep track of model input
         self.input = input
 
-# TODO: problem b, bullet 1
 class myMLP(object):
-    def __init__(self, rng, input, n_in, n_hidden, n_out):
-        pass
+    def __init__(self, rng, input, n_in, n_hidden, n_out, hidden_layer_num = 1, activation=T.tanh):
+        # rng is random generator
+        # input are input data
+        # hidden_layer_num is the number of hidden layers
+        # n_in is the input num
+        # n_hidden is the the neuron number of each hidden layer_num
+        # n_out is the number of ouput variables
+        # activation is the activation method of the hidden layer
+        if hidden_layer_num <= 0:
+            raise Exception("wrong input of hidden_layer_num")
 
-# TODO: you might need to modify the interface
+        self.hidden_layers = []
+        #first hidden_layer
+        self.hidden_layers.append(HiddenLayer(
+            rng=rng,
+            input=input,
+            n_in=n_in,
+            n_out=n_hidden,
+            activation=activation
+        ))
+
+        #inner hidden_layer_num-1 hidden layer
+        for i in range(1, hidden_layer_num):
+            self.hidden_layers.append(HiddenLayer(
+                rng=rng,
+                input=self.hidden_layers[i - 1].output,
+                n_in=n_hidden,
+                n_out=n_hidden,
+                activation=activation
+            ))
+        #last logistic layer for output
+
+        self.logRegressionLayer = LogisticRegression(
+            input=self.hiddenLayer[hidden_layer_num - 1].output,
+            n_in=n_hidden,
+            n_out=n_out
+        )
+
+        #set L1
+        self.L1 = 0
+        for i in range(0, hidden_layer_num):
+            self.L1 += abs(self.hidden_layers[i].W).sum()
+        self.L1 += self.logRegressionLayer.W.sum()
+
+        #set L2_sqr
+        self.L2_sqr = 0
+        for i in range(0, hidden_layer_num):
+            self.L2_sqr += abs(self.hidden_layers[i].W ** 2).sum()
+        self.L2_sqr += (self.logRegressionLayer.W ** 2).sum()
+
+        #set negative_log_likelihood
+        self.negative_log_likelihood = (
+            self.logRegressionLayer.negative_log_likelihood
+        )
+        #set errors
+        self.errors = self.logRegressionLayer.errors
+
+        # the parameters of the model are the parameters of the two layer it is
+        # made out of
+        self.params = []
+        for i in range(0, hidden_layer_num):
+            self.params += self.hidden_layers[i].params
+        self.params += self.logRegressionLayer.params
+
+        # keep track of model input
+        self.input = input
+
 def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
              batch_size=20, n_hidden=500, verbose=False):
     """
@@ -431,7 +493,6 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
     n_train_batches = train_set_x.get_value(borrow=True).shape[0] // batch_size
     n_valid_batches = valid_set_x.get_value(borrow=True).shape[0] // batch_size
     n_test_batches = test_set_x.get_value(borrow=True).shape[0] // batch_size
-    print(train_set_x.get_value(borrow=True).shape)
     ######################
     # BUILD ACTUAL MODEL #
     ######################
@@ -607,4 +668,4 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
            ' ran for %.2fm' % ((end_time - start_time) / 60.)), file=sys.stderr)
 
 if __name__ == '__main__':
-    test_mlp()
+    test_mlp(verbose=True)
