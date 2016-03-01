@@ -423,7 +423,7 @@ class myMLP(object):
         #last logistic layer for output
 
         self.logRegressionLayer = LogisticRegression(
-            input=self.hiddenLayer[hidden_layer_num - 1].output,
+            input=self.hidden_layers[hidden_layer_num - 1].output,
             n_in=n_hidden,
             n_out=n_out
         )
@@ -507,6 +507,7 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
     rng = numpy.random.RandomState(1234)
 
     # construct the MLP class
+    '''
     classifier = MLP(
         rng=rng,
         input=x,
@@ -514,15 +515,15 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
         n_hidden=n_hidden,
         n_out=10,
     )
-
-    # TODO: use your MLP
-    # classifier = muMLP(
-    #    rng=rng,
-    #    input=x,
-    #    n_in=32*32*3,
-    #    n_hidden=n_hidden,
-    #    n_out=10,
-    #)
+    '''
+    classifier = myMLP(
+        rng=rng,
+        input=x,
+        n_in=32*32*3,
+        n_hidden=n_hidden,
+        n_out=10,
+        hidden_layer_num = 2,
+    )
 
     # the cost we minimize during training is the negative log likelihood of
     # the model plus the regularization terms (L1 and L2); cost is expressed
