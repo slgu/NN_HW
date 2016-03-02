@@ -458,7 +458,7 @@ class myMLP(object):
         self.input = input
 
 def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
-             batch_size=20, n_hidden=500, verbose=False):
+             batch_size=20, n_hidden=500, verbose=False, hidden_layer_num=2, activation=T.tanh):
     """
     Demonstrate stochastic gradient descent optimization for a multilayer
     perceptron
@@ -522,7 +522,8 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
         n_in=32*32*3,
         n_hidden=n_hidden,
         n_out=10,
-        hidden_layer_num = 2,
+        hidden_layer_num = hidden_layer_num,
+        activation = activation,
     )
 
     # the cost we minimize during training is the negative log likelihood of
@@ -668,5 +669,13 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
            os.path.split(__file__)[1] +
            ' ran for %.2fm' % ((end_time - start_time) / 60.)), file=sys.stderr)
 
+def test_b2():
+    n_hidden = 2
+    print("b2 result")
+    print("result for hidden_laye = 2, activation: tanh")
+    test_mlp(learning_rate = 0.05, n_epochs = 100, hidden_layer_num =  2, activation = T.tanh)
+    print("result for hidden_laye = 2, activation: softmax")
+    test_mlp(learning_rate = 0.05, n_epochs = 100, hidden_layer_num =  2, activation = T.nnet.softmax)
+
 if __name__ == '__main__':
-    test_mlp(verbose=True)
+    test_b2()
