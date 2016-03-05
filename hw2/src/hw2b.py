@@ -126,7 +126,7 @@ class LogisticRegression(object):
     determine a class membership probability.
     """
 
-    def __init__(self, input, n_in, n_out):
+    def __init__(self, rng, input, n_in, n_out):
         """ Initialize the parameters of the logistic regression
 
         :type input: theano.tensor.TensorType
@@ -143,11 +143,16 @@ class LogisticRegression(object):
 
         """
         # initialize with 0 the weights W as a matrix of shape (n_in, n_out)
-        self.W = theano.shared(
-            value=numpy.zeros(
-                (n_in, n_out),
-                dtype=theano.config.floatX
+        W_values = numpy.asarray(
+            rng.uniform(
+                low=-numpy.sqrt(6. / (n_in + n_out)),
+                high=numpy.sqrt(6. / (n_in + n_out)),
+                size=(n_in, n_out)
             ),
+            dtype=theano.config.floatX
+        )
+        self.W = theano.shared(
+            value= W_values,
             name='W',
             borrow=True
         )
@@ -169,8 +174,8 @@ class LogisticRegression(object):
         # x is a matrix where row-j  represents input training sample-j
         # b is a vector where element-k represent the free parameter of
         # hyperplane-k
-        self.p_y_given_x = T.nnet.softmax(T.dot(input, self.W) + self.b)
-
+        # add a bias
+        self.p_y_given_x = T.nnet.softmax(T.dot(input, self.W) + self.b) + 0.0000001
         # symbolic description of how to compute prediction as class whose
         # probability is maximal
         self.y_pred = T.argmax(self.p_y_given_x, axis=1)
@@ -355,6 +360,7 @@ class MLP(object):
         # The logistic regression layer gets as input the hidden units
         # of the hidden layer
         self.logRegressionLayer = LogisticRegression(
+            rng=rng,
             input=self.hiddenLayer.output,
             n_in=n_hidden,
             n_out=n_out
@@ -423,6 +429,7 @@ class myMLP(object):
         #last logistic layer for output
 
         self.logRegressionLayer = LogisticRegression(
+            rng=rng,
             input=self.hidden_layers[hidden_layer_num - 1].output,
             n_in=n_hidden,
             n_out=n_out
@@ -457,6 +464,9 @@ class myMLP(object):
         # keep track of model input
         self.input = input
 
+    def debug(self):
+        for item in self.params:
+            print(item.get_value())
 def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
              batch_size=20, n_hidden=500, verbose=False, hidden_layer_num=2, activation=T.tanh):
     """
@@ -504,7 +514,7 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
     y = T.ivector('y')  # the labels are presented as 1D vector of
                         # [int] labels
 
-    rng = numpy.random.RandomState(1234)
+    rng = numpy.random.RandomState(4567)
 
     # construct the MLP class
     '''
@@ -566,18 +576,16 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
     # B = [b1, b2, b3, b4], zip generates a list C of same size, where each
     # element is a pair formed from the two lists :
     #    C = [(a1, b1), (a2, b2), (a3, b3), (a4, b4)]
-    updates = [
-        (param, param - learning_rate * gparam)
-        for param, gparam in zip(classifier.params, gparams)
-    ]
 
     # compiling a Theano function `train_model` that returns the cost, but
     # in the same time updates the parameter of the model based on the rules
     # defined in `updates`
+    #rate is a variable which can be changed each step
+    learn_rate = theano.shared(learning_rate)
     train_model = theano.function(
         inputs=[index],
         outputs=cost,
-        updates=updates,
+        updates=[(param, param - learn_rate * gparam) for param, gparam in zip(classifier.params, gparams)],
         givens={
             x: train_set_x[index * batch_size: (index + 1) * batch_size],
             y: train_set_y[index * batch_size: (index + 1) * batch_size]
@@ -610,9 +618,12 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
     done_looping = False
 
     while (epoch < n_epochs) and (not done_looping):
+        #classifier.debug()
         epoch = epoch + 1
+        #new rate for each epoch
+        learn_rate.set_value(learning_rate / (1 + epoch * 0.12))
+        print("rate: %f" % (learn_rate.get_value()))
         for minibatch_index in range(n_train_batches):
-
             minibatch_avg_cost = train_model(minibatch_index)
             # iteration number
             iter = (epoch - 1) * n_train_batches + minibatch_index
@@ -635,6 +646,7 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
                     )
 
                 # if we got the best validation score until now
+                print("this:%f best:%f" % (this_validation_loss ,best_validation_loss))
                 if this_validation_loss < best_validation_loss:
                     #improve patience if loss improvement is good enough
                     if (
@@ -670,12 +682,34 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
            ' ran for %.2fm' % ((end_time - start_time) / 60.)), file=sys.stderr)
 
 def test_b2():
-    n_hidden = 2
     print("b2 result")
-    print("result for hidden_laye = 2, activation: tanh")
-    test_mlp(learning_rate = 0.05, n_epochs = 100, hidden_layer_num =  2, activation = T.tanh)
-    print("result for hidden_laye = 2, activation: softmax")
-    test_mlp(learning_rate = 0.05, n_epochs = 100, hidden_layer_num =  2, activation = T.nnet.softmax)
+    print("result for hidden_layer = 2, activation: tanh")
+    test_mlp(verbose = True, learning_rate = 0.05, n_epochs = 200, hidden_layer_num = 2, activation = T.tanh)
+    print("result for hidden_layer = 2, activation: softmax")
+    test_mlp(verbose = True, batch_size = 20, learning_rate = 0.05, n_epochs = 100, hidden_layer_num =  2, activation = T.nnet.softmax)
+
+def test_b3():
+    print("b3 result")
+    for i in range(3, 11):
+        print("result for %d hidden number" % (i))
+        test_mlp(verbose = True, n_hidden = 100, learning_rate = 0.05, n_epochs = 100, hidden_layer_num = i, activation = T.tanh)
+
+def test_b4():
+    print("b4 result")
+    for i in range(1, 9):
+        neu_num_per_hidden = 2400 / i
+        print("result for %d hidden number, each %d" % (i, neu_num_per_hidden))
+        test_mlp(verbose = True, n_hidden = neu_num_per_hidden, learning_rate = 0.05, n_epochs = 100, hidden_layer_num = i, activation = T.tanh)
+
+def test_b5():
+    base_neuron = 500
+    print("b5 result")
+    for i in range(1, 3):
+        for j in range(1, 5):
+            neu_num_per_hidden = j * base_neuron
+            print("result for %d hidden number, each %d" % (i, neu_num_per_hidden))
+            test_mlp(verbose = True, n_hidden = neu_num_per_hidden, learning_rate = 0.05, n_epochs = 100, hidden_layer_num = i, activation = T.tanh)
+
 
 if __name__ == '__main__':
     test_b2()
