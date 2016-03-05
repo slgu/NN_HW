@@ -621,7 +621,7 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
         #classifier.debug()
         epoch = epoch + 1
         #new rate for each epoch
-        learn_rate.set_value(learning_rate / (1 + epoch * 0.12))
+        learn_rate.set_value(max(learning_rate / (1 + epoch * 0.12), 0.01))
         print("rate: %f" % (learn_rate.get_value()))
         for minibatch_index in range(n_train_batches):
             minibatch_avg_cost = train_model(minibatch_index)
