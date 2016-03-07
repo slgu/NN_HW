@@ -76,7 +76,7 @@ def load_data():
     # Extract validation dataset from train dataset
     train_set_len = len(train_set[1])
     valid_set = (x[-(train_set_len//10):] for x in train_set)
-    test_set = (x[:-(train_set_len//10)] for x in train_set)
+    train_set = (x[:-(train_set_len//10)] for x in train_set)
 
     # train_set, valid_set, test_set format: tuple(input, target)
     # input is a numpy.ndarray of 2 dimensions (a matrix)
@@ -526,6 +526,8 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
         n_out=10,
     )
     '''
+    print("detail:")
+    print("batch_size: %d, hidden per layer: %d, hidden number: %d" % (batch_size, n_hidden, hidden_layer_num))
     classifier = myMLP(
         rng=rng,
         input=x,
@@ -690,26 +692,29 @@ def test_b2():
 
 def test_b3():
     print("b3 result")
-    for i in range(3, 11):
+    for i in range(1, 9):
         print("result for %d hidden number" % (i))
-        test_mlp(verbose = True, n_hidden = 100, learning_rate = 0.05, n_epochs = 100, hidden_layer_num = i, activation = T.tanh)
+        test_mlp(verbose = True, n_hidden = 500, learning_rate = 0.05, n_epochs = 150, hidden_layer_num = i, activation = T.tanh)
 
 def test_b4():
     print("b4 result")
     for i in range(1, 9):
-        neu_num_per_hidden = 2400 / i
+        neu_num_per_hidden = 1200 / i
         print("result for %d hidden number, each %d" % (i, neu_num_per_hidden))
-        test_mlp(verbose = True, n_hidden = neu_num_per_hidden, learning_rate = 0.05, n_epochs = 100, hidden_layer_num = i, activation = T.tanh)
+        test_mlp(verbose = True, batch_size = 200, n_hidden = neu_num_per_hidden, learning_rate = 0.05, n_epochs = 500, hidden_layer_num = i, activation = T.tanh)
 
 def test_b5():
-    base_neuron = 500
+    base_neuron = 200
+    neu_nums = [50, 100, 200, 400, 600]
     print("b5 result")
     for i in range(1, 3):
-        for j in range(1, 5):
-            neu_num_per_hidden = j * base_neuron
+        for j in range(0, 5):
+            neu_num_per_hidden = neu_nums[j]
             print("result for %d hidden number, each %d" % (i, neu_num_per_hidden))
-            test_mlp(verbose = True, n_hidden = neu_num_per_hidden, learning_rate = 0.05, n_epochs = 100, hidden_layer_num = i, activation = T.tanh)
+            test_mlp(verbose = True, batch_size = 200, n_hidden = neu_num_per_hidden, learning_rate = 0.05, n_epochs = 500, hidden_layer_num = i, activation = T.tanh)
 
+def test():
+    test_mlp(verbose = True, n_hidden = 200, learning_rate = 0.05, n_epochs = 150, hidden_layer_num = 8, activation = T.tanh)
 
 if __name__ == '__main__':
-    test_b2()
+    test_b3()
